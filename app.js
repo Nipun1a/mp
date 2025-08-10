@@ -2,6 +2,9 @@ const express = require('express');
 const app = express();
 const path = require('path');
 const cookieParser = require('cookie-parser');
+const userModel = require('./models/user'); // Assuming user model is in models/user.js
+const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
 
 
 //middleware to serve static files
@@ -14,63 +17,99 @@ app.use(cookieParser());
 
 
 app.get('/', function(req, res){
-    res.send("Hello World!");
+    res.render('signup');
 });
 
-app.post('/create', async function(req, res){
-    let {username, name, email, password} = req.body;
+app.post('/signup', async (req, res) => {
+    try {
+        let { username, name, email, password } = req.body;
 
-    let user = await userModel.findOne({username});
-    if (user){
-        return res.status(400).send("User already exists"
-        );    
-    }   
-    bcrypt.genSalt(10, function(err, salt){
-        if (err) return res.status(500).send("Error generating salt");
-        bcrypt.hash(password, salt, async function(err, hash){
-            if (err) return res.status(500).send("Error in hashing password");
-            else{
-                userModel.create({
-                    username,
-                    name,
-                    email,
-                    password: hash
-                }, function(err, user){
-                    if (err) return res.status(500).send("Error creating user");
-                    res.cookie('userId', user._id, { maxAge: 900000, httpOnly: true });
-                    res.status(200).send("User created successfully");
-                })
+        let existingUser = await userModel.findOne({ username });
+        if (existingUser) {
+            return res.status(400).send("User already exists");
+        }
 
-            }
-            let token = jwt.sign({userId: user._id, email: email}, 'secretKey', {expiresIn: '1h'});
-            res.send("User created successfully");
-        })
-    })
+        let salt = await bcrypt.genSalt(10);
+        let hash = await bcrypt.hash(password, salt);
+
+        let user = await userModel.create({ username, name, email, password: hash });
+
+        let token = jwt.sign({ userId: user._id, email: email }, 'secretKey', { expiresIn: '1h' });
+        res.cookie('token', token, { maxAge: 900000, httpOnly: true });
+        res.status(200).send("User created successfully");
+    } catch (err) {
+        res.status(500).send("Server error");
+    }
 });
 
-app.post('login', async function(req,res){
-    let {username, password} = req.body;
-    let user = await userModel.findOne({email: username});
-    if (!user){
-        return res.status(400).send("User does not exist");
-  }
-  bcrypt.compare(passwoord, user.password, function(err, result){
-    if (err) return res.status(500).send("something went wrong");
-    if (!result) return res.status(400).send("Incorrect password");
-    
-    let token = jwt.sign({userId: user._id, email: user.email}, 'secretKey', {expiresIn: '1h'});
-    res.cookie('token', token, { maxAge: 900000, httpOnly: true });
-    res.status(200).send("Login successful");
-  }
 
-
-
+app.get('/login', function(req, res) {
+    res.render('login'); 
 });
+
+app.get("/profile", isLoggedIn, async function(req, res){
+    let user = await userModel.findOne({email: req.user.email});
+
+    res.render("profile",user);
+
+})
+
+
+
+app.post('/login', async function (req, res) {
+    try {
+        let { username, password } = req.body;
+
+        // Check if both fields are provided
+        if (!username || !password) {
+            return res.status(400).send("Username/Email and password are required");
+        }
+
+        // Find the user (change 'username' to 'email' if you want email login)
+        let user = await userModel.findOne({ username });
+        if (!user) {
+            return res.status(400).send("User does not exist");
+        }
+
+        // Compare password
+        let isMatch = await bcrypt.compare(password, user.password);
+        if (!isMatch) {
+            return res.status(400).send("Incorrect password");
+        }
+
+        // Create token
+        let token = jwt.sign(
+            { userId: user._id, email: user.email },
+            'secretKey', // move to process.env.JWT_SECRET in production
+            { expiresIn: '1h' }
+        );
+
+        // Store token in cookie
+        res.cookie('token', token, { maxAge: 900000, httpOnly: true });
+
+        // Login successful
+        res.status(200).redirect('/profile');
+    } catch (err) {
+        console.error(err);
+        res.status(500).send("Server error");
+    }
+});
+
 
 app.get('/logout', function(req, res){
     res.clearCookie('token');
     res.redirect('/login');
 });
+
+// isko ache se samaj liyo isse we are able to create the protected routes
+function isLoggedIn(req, res, next){
+    if (req.cookies.token === "")res.redirect('/profile');
+    else {
+        let data = jwt.verify(req.cookies.token, 'secretKey');
+        req.user = data;
+        next();
+    }
+}
 
 
 
