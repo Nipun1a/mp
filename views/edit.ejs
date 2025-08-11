@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Edit Post</title>
+</head>
+<body>
+    <h1>Welcome, <%= user.name %>!</h1>
+
+    <form action="/post" method="POST">
+        <textarea name="postcontent" placeholder="Write something..." required></textarea>
+        <button type="submit">Update</button>
+    </form>
+
+    
+
+    <a href="/logout">Logout</a>
+</body>
+</html>

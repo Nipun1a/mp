@@ -1,14 +1,46 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>User Profile</title>
+    <title>Profile</title>
 </head>
 <body>
-    <h1>Welcome to your profile</h1>
+    <h1>Welcome, <%= user.name %>!</h1>
 
-    <h3 class = "text-3xl mb-4">hello,<%= user.name %></h3>
+    <!-- Post creation form -->
+    <form action="/post" method="POST">
+        <textarea name="postcontent" placeholder="Write something..." required></textarea>
+        <button type="submit">Post</button>
+    </form>
 
+    <h2>Your Posts:</h2>
+    <ul>
+        <% if (user.posts && user.posts.length > 0) { %>
+            <% user.posts.forEach(function(post) { %>
+                <li>
+                    <strong><%= post.content %></strong>
+                    <em>(<%= post.date.toDateString() %>)</em>
+
+                    <!-- Like/Unlike form -->
+                    <form action="/like/<%= post._id %>" method="POST" style="display:inline;">
+                        <button type="submit">
+                            <% if (post.likes.includes(user._id)) { %>
+                                Unlike
+                            <% } else { %>
+                                Like
+                            <% } %>
+                            (<%= post.likes.length %>)
+                        </button>
+                    </form>
+
+                    <!-- Edit link -->
+                    <a href="/edit/<%= post._id %>">Edit</a>
+                </li>
+            <% }) %>
+        <% } else { %>
+            <li>No posts yet.</li>
+        <% } %>
+    </ul>
+
+    <a href="/logout">Logout</a>
 </body>
 </html>
