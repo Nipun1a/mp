@@ -5,6 +5,9 @@ const mongoose = require('mongoose');
 const cookieParser = require('cookie-parser');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const multer = require('multer');
+const crypto = require('crypto');
+
 
 const userModel = require('./models/user');
 const postModel = require('./models/post');
