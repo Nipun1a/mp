@@ -8,7 +8,6 @@ const jwt = require('jsonwebtoken');
 const multer = require('multer');
 const crypto = require('crypto');
 
-
 const userModel = require('./models/user');
 const postModel = require('./models/post');
 
@@ -78,8 +77,8 @@ app.get('/profile', isLoggedIn, async (req, res) => {
 
 app.post('/post', isLoggedIn, async (req, res) => {
     try {
-       let user = await userModel.findOne({ email: req.user.email })
-    .populate({ path: 'posts', options: { sort: { date: -1 } } });
+        let user = await userModel.findOne({ email: req.user.email })
+            .populate({ path: 'posts', options: { sort: { date: -1 } } });
 
         let post = await postModel.create({
             user: user._id,
@@ -101,7 +100,7 @@ app.get('/logout', (req, res) => {
     res.redirect('/login');
 });
 
-app.post("/like/:id", isLoggedIn, async function(req, res) {
+app.post("/like/:id", isLoggedIn, async function (req, res) {
     let post = await postModel.findById(req.params.id).populate("user");
 
     let likeIndex = post.likes.indexOf(req.user.userId);
@@ -163,6 +162,35 @@ app.post("/edit/:id", isLoggedIn, async function (req, res) {
 });
 
 
+//  Multer setup (only once, outside route)
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, './public/images/uploads');
+    },
+    filename: function (req, file, cb) {
+        cb(null, Date.now() + '-' + file.originalname);
+    }
+});
+const upload = multer({ storage: storage });
+
+//  Upload route
+app.post("/upload", isLoggedIn, upload.single('profileImage'), async function (req, res) {
+    try {
+        if (!req.file) {
+            return res.status(400).send("No file uploaded");
+        }
+
+        await userModel.findByIdAndUpdate(
+            req.user.userId,
+            { profileImage: "/images/uploads/" + req.file.filename }
+        );
+
+        res.redirect('/profile');
+    } catch (err) {
+        console.error(err);
+        res.status(500).send("Error saving file path");
+    }
+});
 
 // Auth middleware
 function isLoggedIn(req, res, next) {

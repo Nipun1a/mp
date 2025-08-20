@@ -12,16 +12,31 @@
     <div class="bg-white shadow-lg rounded-xl p-8 w-full max-w-3xl">
         <!-- Profile Info -->
         <div class="flex items-center gap-6 mb-8">
-            <!-- Profile Image Placeholder -->
+            <!-- Profile Image -->
             <div class="w-24 h-24 rounded-full overflow-hidden border-4 border-indigo-500 bg-gray-200 flex items-center justify-center text-gray-500">
-                <span class="text-sm">No Image</span>
-                <!-- Later: Replace with <img src="<%= user.profileImage %>" alt="Profile Image" class="w-full h-full object-cover"> -->
+                <% if (user.profileImage) { %>
+                    <img src="<%= user.profileImage %>" alt="Profile Image" class="w-full h-full object-cover">
+                <% } else { %>
+                    <span class="text-sm">No Image</span>
+                <% } %>
             </div>
             <div>
                 <h1 class="text-3xl font-bold text-gray-800">Welcome, <%= user.name %>!</h1>
                 <p class="text-gray-500"><%= user.email %></p>
             </div>
         </div>
+
+        <!-- ✅ Upload Form -->
+        <form action="/upload" method="POST" enctype="multipart/form-data" class="mb-8">
+            <input type="file" name="profileImage" accept="image/*" required
+                   class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 
+                          file:rounded-full file:border-0 file:text-sm file:font-semibold
+                          file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
+            <button type="submit"
+                class="mt-3 px-6 py-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg shadow-md">
+                Upload Profile Photo
+            </button>
+        </form>
 
         <!-- Create Post Form -->
         <form action="/post" method="POST" class="mb-8">
